@@ -51,16 +51,24 @@ function! syntastic#c#ReadConfig(file) abort " {{{2
     call map(lines, 'substitute(v:val, ''\m\s\+$'', "", "")')
 
     let parameters = []
+    let includeOptions = ['-I', '-include']
     for line in lines
-        let matches = matchstr(line, '\m\C^\s*-I\s*\zs.\+')
-        if matches !=# ''
-            " this one looks like an absolute path
-            if match(matches, '\m^\%(/\|\a:\)') != -1
-                call add(parameters, '-I' . matches)
-            else
-                call add(parameters, '-I' . filepath . syntastic#util#Slash() . matches)
+        let findIncludeOption = 0
+        for includeOption in includeOptions
+            let matches = matchstr(line, '\m\C^\s*' . includeOption . '\s*\zs.\+')
+            if matches !=# ''
+                " this one looks like an absolute path
+                if match(matches, '\m^\%(/\|\a:\)') != -1
+                    call add(parameters, includeOption . matches)
+                else
+                    call add(parameters, includeOption . filepath . syntastic#util#Slash() . matches)
+                endif
+                let findIncludeOption = 1
+                break
             endif
-        else
+        endfor
+        
+        if findIncludeOption == 0 
             call add(parameters, line)
         endif
     endfor
